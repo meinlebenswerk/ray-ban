@@ -1,0 +1,11 @@
+{
+  "name": "rayban",
+  "version": "1.0.0",
+  "description": "experimental raycasting implementation in JS/OpenGL",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "niacino <npm.eckert@tum.de>",
+  "license": "ISC"
+}
