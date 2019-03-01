@@ -1,192 +1,80 @@
-//raytracer works as follows:
-//camera shoots rays into scene -> hit smth, bounce, if n bounces == limit -> ray to light, check if ok.
+const fs = require('fs');
+const {vec3, mat3} = require('./linear');
+const {rb_ray, rb_sphere, rb_camera, rb_plane} = require('./rayban');
 
-class vec3{
-  constructor(x,y,z){
-    this.x = x;
-    this.y = y;
-    this.z = z;
-  }
-
-  add(a){
-    if( a instanceof vec3) return this.addv(a)
-    let x,y,z;
-    x = this.x + x;
-    y = this.y + y;
-    z = this.z + z;
-    return new vec3(x,y,z)
-  }
-
-  addv(v){
-    let x,y,z;
-    x = this.x + v.x;
-    y = this.y + v.y;
-    z = this.z + v.z;
-    return new vec3(x,y,z)
-  }
-
-  scl(a){
-    if( a instanceof vec3) return this.dot(a)
-    let x,y,z;
-    x = this.x * a;
-    y = this.y * a;
-    z = this.z * a;
-    return new vec3(x,y,z)
-  }
-
-  dot(v){
-    let x,y,z;
-    x = this.x * v.x;
-    y = this.y * v.y;
-    z = this.z * v.z;
-    return new vec3(x,y,z)
-  }
-
-  cross(v){
-    let x,y,z;
-    x = (this.y * v.z) - (this.z * v.y);
-    y = (this.z * v.x) - (this.x * v.z);
-    z = (this.x * v.y) - (this.y * v.x);
-    return new vec3(x,y,z)
-  }
-
+let _clamp255 = (color) => {
+  color.x = (color.x > 255) ? 255 : (color.x < 0) ? 0 : color.x;
+  color.y = (color.y > 255) ? 255 : (color.y < 0) ? 0 : color.y;
+  color.z = (color.z > 255) ? 255 : (color.z < 0) ? 0 : color.z;
+  return color
 }
 
-class mat3{
+const H = 400
+const W = 400
 
-  constructor(e1,e2,e3){
-    this.e1 = e1;
-    this.e2 = e2;
-    this.e3 = e3;
+const white = new vec3(255,255,255)
+const black = new vec3(0,0,0)
+const red   = new vec3(255,0,0)
+
+let objects = []
+
+
+objects.push( new rb_plane( new vec3(-50,-50,50), new vec3(50,-50 ,50), new vec3(50,50,50), new vec3(-50,50,50)) )
+//objects.push( new rb_plane( new vec3(-50,-50,50), new vec3(50,-50 ,50), new vec3(50,-50,0), new vec3(-50,-50,0)) )
+//objects.push( new rb_plane( new vec3(-50,-50,50), new vec3(50,-50 ,50), new vec3(50,50,50), new vec3(-50,50,50)) )
+//objects.push( new rb_plane( new vec3(-50,-50,50), new vec3(50,-50 ,50), new vec3(50,50,50), new vec3(-50,50,50)) )
+
+// objects.push(new rb_plane(new vec3(0, 0, 0),new vec3(50, 0, 0),new vec3(50, 50, 0),new vec3(0, 50, 0)))
+// objects.push(new Sphere(new vec3(W*0.5, H*0.8, 50),50))
+
+let lights = []
+lights.push(new rb_sphere(new vec3(200, 200, 50), 1));
+lights.push(new rb_sphere(new vec3(-200, -200, 50), 1));
+
+let cam = new rb_camera({ resx: H, resy: W, ssx: 500, ssy: 500})
+
+function runRaycast(options) {
+  ({fname, objects, lights, camera} = options)
+
+  let wstream = fs.createWriteStream(`${fname}.ppm`);
+  wstream.write(`P6 ${W} ${H} 255 `)
+  let pix_col = new vec3(0,0,0)
+
+  let rays = camera.generateCameraRays()
+
+  for( let ri=0; ri<rays.length; ri++ ){
+
+    console.log(`raycast ${(ri*100)/rays.length}%`)
+
+    pix_col = black;
+    var r = rays[ri]
+    let n = 0
+
+    for( let obj of objects ){
+      for( let light of lights ){
+
+        n++
+        var t = obj.intersect(r, t)
+
+        if (t) {
+          let pi = r.origin.add(r.direction.scl(t))
+          let l  = light.center.sub(pi);
+          //console.log(obj)
+          let n  = obj.normal(pi);
+
+          let dt = l.nrm().dot(n.nrm())
+          pix_col = pix_col.add( (red.add(white.scl(dt))) )
+        }
+      }
+    }
+    pix_col = pix_col.scl(1/n)
+    pix_col = _clamp255(pix_col)
+    let arr = [pix_col.x,pix_col.y,pix_col.z]
+    let buf = new Uint8Array(arr)
+    wstream.write(buf)
   }
 
-  mult(c){
-    if( typeof(c) == 'number' ) return this._mult_scl(c)
-    if( c instanceof mat3 ) return this._mult_mat(c)
-    if( c instanceof vec3 ) return this._mult_vec(c)
-  }
-
-  _mult_vec(v){
-    let vec;
-    vec = e1.scl(v.x).add(e2.scl(v.y)).add(e3.scl(v.z));
-    return vec;
-  }
-
-  _mult_mat(m){
-    let c11,c12,c13,c21,c22,c23,c31,c32,c33;
-    c11 = (this.e1.x * m.ei.x) + this.e2.x * m.e1.y + this.e3.x * m.e1.z;
-    c12 = this.e1.x * m.e2.x + this.e2.x * m.e2.y + this.e3.x * m.e2.z;
-    c13 = this.e1.x * m.e3.x + this.e2.x * m.e3.y + this.e3.x * m.e3.z;
-    c21 = this.e3.x * m.e1.x + this.e2.y * m.e1.y + this.e3.y * m.e1.z;
-    c22 = this.e1.y * m.e2.x + this.e2.y * m.e2.y + this.e3.y * m.e2.z;
-    c23 = this.e1.y * m.e3.x + this.e2.y * m.e3.y + this.e3.y * m.e3.z;
-    c31 = this.e1.z * m.e1.x + this.e2.z * m.e1.y + this.e3.z * m.e1.z;
-    c32 = this.e1.z * m.e2.x + this.e2.z * m.e2.y + this.e3.z * m.e2.z;
-    c33 = this.e1.z * m.e3.x + this.e2.z * m.e3.y + this.e3.z * m.e3.z;
-
-    let e1,e2,e3;
-    e1 = new vec3(c11,c21,c31)
-    e2 = new vec3(c12,c22,c32)
-    e3 = new vec3(c13,c23,c33)
-
-    return new mat3(e1,e2,e3)
-  }
-
-  _mult_scl(a){
-    let e1, e2, e3;
-    e1 = this.e1.scl(a);
-    e2 = this.e2.scl(a);
-    e3 = this.e3.scl(a);
-    return new mat3(e1,e2,e3)
-  }
-
+  wstream.end();
 }
 
-class rbObject{
-  constructor(){}
-}
-
-class rbLight{
-  constructor(options){
-    // super()
-    this.radius = options.radius;
-    this.position = options.position;
-    this.color = options.color;
-  }
-}
-
-class rbSphere extends rbObject{
-  constructor(options){
-    super()
-    this.radius = options.radius;
-    this.position = options.position;
-    this.color = options.color;
-  }
-}
-
-class RayBan_Scene{
-
-  constructor(){
-    this.objects = []
-    this.lights = []
-  }
-
-  addObject(rbObject){
-    this.objects.push(rbObject);
-  }
-
-  addLight(rbLight){
-    this.lights.push(rbLight)
-  }
-
-}
-
-class RayBan{
-
-  constructor(options){
-    console.log(options)
-    this.bounces = options.bounces | 1;
-    this.scene = this._loadScene(options.fname);
-  }
-
-  _loadScene(fname){
-    //this should, one day, load a scene from a file.
-
-    let scene = new RayBan_Scene();
-    scene.addObject(new rbSphere({color:'0xfff',position:[0,0,0], radius: 10}))
-    scene.addLight (new rbLight( {color:'0xfff',position:[0,0,10], radius: 5}))
-    return scene;
-  }
-
-  setCameraPos(vecpos){
-    this.camPos = vecpos;
-  }
-
-  setCameraResolution(xr, yr, pixelsize = 0.1){
-    this.camRes = [xr,yr];
-    this.camSensorSize = [xr*pixelsize,yr*pixelsize]
-  }
-
-  setCameraNormal(vecNorm){
-    this.camNorm = vecNorm;
-  }
-
-}
-
-_savePPM(fname, data){
-  
-}
-
-_rcStep = (rays,rayban) =>{
-
-}
-
-let runRaycast = (rb) =>{
-
-}
-
-//integrated testbench:
-
-let rb = new RayBan({bounces: 1, fname: 'none'})
-
-runRaycast(rb, 'out.ppm')
+runRaycast({fname: 'out', objects: objects, lights: lights, camera: cam })
