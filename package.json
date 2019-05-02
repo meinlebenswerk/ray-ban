@@ -7,5 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "niacino <npm.eckert@tum.de>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "gpu.js": "^2.0.0-rc.2"
+  }
 }

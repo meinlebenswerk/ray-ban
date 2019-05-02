@@ -9,8 +9,8 @@ let _clamp255 = (color) => {
   return color
 }
 
-const H = 400
-const W = 400
+const H = 300
+const W = 300
 
 const white = new vec3(255,255,255)
 const black = new vec3(0,0,0)
@@ -19,19 +19,25 @@ const red   = new vec3(255,0,0)
 let objects = []
 
 
-objects.push( new rb_plane( new vec3(-50,-50,50), new vec3(50,-50 ,50), new vec3(50,50,50), new vec3(-50,50,50)) )
-//objects.push( new rb_plane( new vec3(-50,-50,50), new vec3(50,-50 ,50), new vec3(50,-50,0), new vec3(-50,-50,0)) )
-//objects.push( new rb_plane( new vec3(-50,-50,50), new vec3(50,-50 ,50), new vec3(50,50,50), new vec3(-50,50,50)) )
-//objects.push( new rb_plane( new vec3(-50,-50,50), new vec3(50,-50 ,50), new vec3(50,50,50), new vec3(-50,50,50)) )
+// back
+objects.push( new rb_plane( new vec3(-0.5,0.5,1), new vec3(-0.5,-0.5 ,1), new vec3(0.5,-0.5,1), new vec3(-0.5,-0.5,1) ) )
+// bottom
+objects.push( new rb_plane( new vec3(-0.5,-0.5,1), new vec3(0.5,-0.5 ,1), new vec3(0.5,-0.5,0), new vec3(-0.5,-0.5,0) ) )
+// top
+// objects.push( new rb_plane( new vec3(-0.5,-0.5,1), new vec3(0.5,-0.5 ,1), new vec3(0.5,-0.5,0), new vec3(-0.5,-0.5,0) ) )
+
+// objects.push( new rb_plane( new vec3(-0.5,-0.5,1), new vec3(0.5,-0.5 ,1), new vec3(0.5,-0.5,0), new vec3(0.5,-0.5,0)) ) //left
+// objects.push( new rb_plane( new vec3(0.5,0.5,1), new vec3(-0.5,0.5,1), new vec3(-0.5,0.5,0), new vec3(0.5,0.5,0)) )
+// objects.push( new rb_plane( new vec3(0.5,0.5,1), new vec3(0.5,0.5,0), new vec3(0.5,-0.5,0), new vec3(0.5,-0.5,1))     ) //bottom
 
 // objects.push(new rb_plane(new vec3(0, 0, 0),new vec3(50, 0, 0),new vec3(50, 50, 0),new vec3(0, 50, 0)))
-// objects.push(new Sphere(new vec3(W*0.5, H*0.8, 50),50))
+// objects.push(new rb_sphere(new vec3(0, 0, 0.5),0.1))
 
 let lights = []
 lights.push(new rb_sphere(new vec3(200, 200, 50), 1));
-lights.push(new rb_sphere(new vec3(-200, -200, 50), 1));
+// lights.push(new rb_sphere(new vec3(-200, -200, 50), 0.5));
 
-let cam = new rb_camera({ resx: H, resy: W, ssx: 500, ssy: 500})
+let cam = new rb_camera({ resx: H, resy: W, ssx: 1.2, ssy: 1.2, fov: 40})
 
 function runRaycast(options) {
   ({fname, objects, lights, camera} = options)
@@ -44,7 +50,7 @@ function runRaycast(options) {
 
   for( let ri=0; ri<rays.length; ri++ ){
 
-    console.log(`raycast ${(ri*100)/rays.length}%`)
+    //console.log(`raycast ${(ri*100)/rays.length}%`)
 
     pix_col = black;
     var r = rays[ri]
@@ -77,4 +83,4 @@ function runRaycast(options) {
   wstream.end();
 }
 
-runRaycast({fname: 'out', objects: objects, lights: lights, camera: cam })
+runRaycast({fname: 'out', objects: objects, lights: lights, camera: cam})

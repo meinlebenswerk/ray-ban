@@ -56,23 +56,36 @@ class rb_material {
 class rb_camera {
 
   constructor(options){
-    this.resolution = {x: options.resx | 400, y: options.resy | 400}
-    this.size = {x: options.ssx | 1, y: options.ssy | 1}
+    this.resolution = {x: options.resx || 400, y: options.resy || 400}
+    this.size = {x: options.ssx || 1, y: options.ssy || 1}
+    this.normal = new vec3(0,0,1)
+
+    this.fov = ( (options.fov || 0)/180)*Math.PI
+
+    this.rmat = new mat3(new vec3(1,0,0),new vec3(0,1,0),new vec3(0,0,1))
   }
 
   generateCameraRays(){
     let rays = []
 
+    //calculate 'virtual origin' point from the sensor size and the fov.
+    let vpz = (this.fov !== 0)? (this.size.x/2)/Math.tan(this.fov) : 10000000000000
+    let virtual_origin = new vec3(0,0,-vpz);
+
     let dx, dy;
-    for( let x=0; x<this.resolution.x; x++ ){
-      for( let y=0; y<this.resolution.y; y++ ){
+    console.log(`generating rays: ${this.resolution.x}x${this.resolution.y} [${this.resolution.x*this.resolution.y} total rays]. \nFOV is ${(this.fov*180)/Math.PI} deg [vpz ${vpz}]`)
+    for( let y=0; y<this.resolution.y; y++ ){
+      for( let x=0; x<this.resolution.x; x++ ){
+
         dx = (x/this.resolution.x) - 0.5
         dy = (y/this.resolution.y) - 0.5
-
         dx *= this.size.x
         dy *= this.size.y
 
-        rays.push( new rb_ray(new vec3(dx,dy,0), new vec3(0,0,1)) )
+        let ray_origin = new vec3(dx,dy,0)
+        let ray_normal = ray_origin.sub(virtual_origin).nrm()
+
+        rays.push( new rb_ray(ray_origin, ray_normal) )
       }
     }
 
@@ -89,28 +102,54 @@ class rb_plane {
     this.p2 = p2
     this.p3 = p3
 
-    let e1,e2
-    this.e1 = p1.sub(p0).nrm()
-    this.e2 = p2.sub(p0).nrm()
+    let t1, t2
+    t1 = p0.sub(p1)
+    t2 = p2.sub(p1)
+
+    this.sl1 = t1.length()
+    this.sl2 = t2.length()
+
+    this.e1 = t1.nrm()
+    this.e2 = t2.nrm()
 
     this.norm = this.e1.cross(this.e2)
 
-    this.center = p0
+    this.center = p0.add(p1).add(p2).add(p3).scl(1/4)
+
+    this.tmat = new mat3(this.e1,this.e2,this.norm).inverse()
   }
 
   normal(point){
     return this.norm
   }
 
+  __aabb(point){
+    let lb, ub
+    let inside
+
+    //x-axis
+    lb = p0.x
+    ub = p3.x
+    if(point.x < lb || point.x > ub) return false
+
+    //y-axis
+    lb = p0.y
+    ub = p1.y
+    if(point.y < lb || point.y > ub) return false
+
+    //z-axis
+    lb = p0.x
+    ub = p3.x
+    if(point.z < lb || point.z > ub) return false
+  }
+
   containsPoint(point){
-    //x-y check:
-    let pmat = new mat3(this.e1,this.e2,new vec3())
-    let tmp = pmat._mult_vec(point.sub(this.p2))
+    let tmp, l
+    tmp = point.sub(this.p1)
+    tmp = this.tmat._mult_vec(tmp)
 
-    // console.log(tmp.x,tmp.y,tmp.z)
-
-    if(tmp.x <= this.p2.sub(this.p0).length()){
-      return ( tmp.y <= this.p1.sub(this.p0).length() )
+    if(tmp.x >= 0 && tmp.x <= this.sl1){
+      return (tmp.y >= 0 && tmp.y <= this.sl2)
     }
 
     return false
