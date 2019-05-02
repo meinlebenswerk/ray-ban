@@ -21,12 +21,12 @@ let objects = []
 
 // back
 objects.push( new rb_plane( new vec3(-0.5,0.5,1), new vec3(-0.5,-0.5 ,1), new vec3(0.5,-0.5,1), new vec3(-0.5,-0.5,1) ) )
-// bottom
-objects.push( new rb_plane( new vec3(-0.5,-0.5,1), new vec3(0.5,-0.5 ,1), new vec3(0.5,-0.5,0), new vec3(-0.5,-0.5,0) ) )
 // top
-// objects.push( new rb_plane( new vec3(-0.5,-0.5,1), new vec3(0.5,-0.5 ,1), new vec3(0.5,-0.5,0), new vec3(-0.5,-0.5,0) ) )
-
-// objects.push( new rb_plane( new vec3(-0.5,-0.5,1), new vec3(0.5,-0.5 ,1), new vec3(0.5,-0.5,0), new vec3(0.5,-0.5,0)) ) //left
+objects.push( new rb_plane( new vec3(-0.5,-0.5,1), new vec3(0.5,-0.5 ,1), new vec3(0.5,-0.5,0), new vec3(-0.5,-0.5,0) ) )
+// bottom
+objects.push( new rb_plane( new vec3(-0.5,0.5,1), new vec3(0.5,0.5 ,1), new vec3(0.5,0.5,0), new vec3(-0.5,0.5,0) ) )
+//left
+objects.push( new rb_plane( new vec3(-0.5,-0.5,1), new vec3(-0.5,0.5 ,1), new vec3(-0.5,0.5,0), new vec3(-0.5,-0.5,1) ) )
 // objects.push( new rb_plane( new vec3(0.5,0.5,1), new vec3(-0.5,0.5,1), new vec3(-0.5,0.5,0), new vec3(0.5,0.5,0)) )
 // objects.push( new rb_plane( new vec3(0.5,0.5,1), new vec3(0.5,0.5,0), new vec3(0.5,-0.5,0), new vec3(0.5,-0.5,1))     ) //bottom
 
@@ -48,8 +48,9 @@ function runRaycast(options) {
 
   let rays = camera.generateCameraRays()
 
+  let ray_hit = false
   for( let ri=0; ri<rays.length; ri++ ){
-
+    ray_hit = false
     //console.log(`raycast ${(ri*100)/rays.length}%`)
 
     pix_col = black;
@@ -70,10 +71,13 @@ function runRaycast(options) {
 
           let dt = l.nrm().dot(n.nrm())
           pix_col = pix_col.add( (red.add(white.scl(dt))) )
+          ray_hit = true
+          break
         }
       }
+      if(ray_hit) break
     }
-    pix_col = pix_col.scl(1/n)
+    // pix_col = pix_col.scl(1/n)
     pix_col = _clamp255(pix_col)
     let arr = [pix_col.x,pix_col.y,pix_col.z]
     let buf = new Uint8Array(arr)

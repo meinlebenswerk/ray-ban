@@ -5,7 +5,6 @@ class rb_ray {
     this.origin = origin
     this.direction = direction
   }
-
 }
 
 class rb_sphere {
@@ -173,6 +172,18 @@ class rb_plane {
     return false;
   }
 
+}
+
+class rb_tri {
+  constructor(norm, p0,p1,p2){
+    this.p0 = p0
+    this.p1 = p1
+    this.p2 = p2
+
+    this.norm = norm
+  }
+
+  
 }
 
 

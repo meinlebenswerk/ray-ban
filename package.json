@@ -1,14 +1,12 @@
 {
   "name": "rayban",
-  "version": "1.0.0",
-  "description": "experimental raycasting implementation in JS/OpenGL",
+  "version": "0.0.1",
+  "description": "experimental raycasting implementation in JS",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node main.js"
   },
   "author": "niacino <npm.eckert@tum.de>",
   "license": "ISC",
-  "dependencies": {
-    "gpu.js": "^2.0.0-rc.2"
-  }
+  "dependencies": {}
 }
